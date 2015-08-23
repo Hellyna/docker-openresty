@@ -1,0 +1,56 @@
+#!/bin/ash
+
+set -e
+
+HOME='/root'
+version='1.9.3.1'
+srcdir="ngx_openresty-${version}"
+tarball="${srcdir}.tar.gz"
+url="https://openresty.org/download/${tarball}"
+
+builddeps="\
+curl \
+gcc \
+make \
+musl-dev \
+ncurses-dev \
+openssl-dev \
+pcre-dev \
+perl \
+readline-dev"
+
+deps="\
+pcre \
+libgcc"
+
+configure_args="\
+--with-ipv6 \
+--with-pcre-jit"
+
+cleanup="\
+/var/cache/apk/* \
+${HOME}/${srcdir} \
+${HOME}/${tarball}"
+
+openresty_dir='/usr/local/openresty'
+logdir="${openresty_dir}/nginx/logs"
+
+cd
+rm -vf run
+
+apk update
+apk upgrade
+apk add $builddeps
+curl -LO "${url}"
+tar -xzvf "${tarball}"
+cd "${srcdir}"
+./configure $configure_args
+make
+make install
+apk del $builddeps
+apk add $deps
+rm -rvf $cleanup
+ln -svf /dev/stdout "${logdir}/access.log"
+ln -svf /dev/stderr "${logdir}/error.log"
+
+set +e
